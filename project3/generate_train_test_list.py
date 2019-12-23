@@ -251,24 +251,11 @@ def generate_random_crops(shape, rects, random_times):
 
 3、显示坐标框
 '''
-#显示出
-def show_keypoinit_bbox():
-    lines=load_metadata('label.txt')    
 
-    for line in lines:
-        mdata=line.split()
-        img=cv2.imread(mdata[0],1)
-        cv2.rectangle(img, (int(float(mdata[1])),int(float(mdata[2]))), (int(float(mdata[3])),int(float(mdata[4]))), (0,255,0), 2)
-        for i in range(21):
-            x =int(float(mdata[5+2*i]))
-            y =int(float(mdata[5+2*i+1]))
-            cv2.circle(img, (x,y), 2, (0,0,255), -1,4)
-        cv2.imshow('img',img)
-        cv2.waitKey(0)
-    cv2.destroyAllWindows()
+def image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale):
+    bbox_w = bbox_x2 - bbox_x1
+    bbox_h = bbox_y2 - bbox_y1
 
-def image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_w,bbox_h,scale):
-    
     ori_x = bbox_x1 - int(scale*bbox_w)
     ori_y = bbox_y1 - int(scale*bbox_h)
 
@@ -277,8 +264,8 @@ def image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_w,bbox_h,scale):
     if ori_y < 0:
         ori_y = 0
 
-    ori_x_end = bbox_x1 +bbox_w + int(scale*bbox_w)
-    ori_y_end = bbox_y1 +bbox_h+ int(scale*bbox_h)
+    ori_x_end = bbox_x2 + int(scale*bbox_w)
+    ori_y_end = bbox_y2 + int(scale*bbox_h)
 
     if ori_x_end >=img_w:
         ori_x_end = img_w-1
@@ -286,30 +273,58 @@ def image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_w,bbox_h,scale):
     if ori_y_end >=img_h:
         ori_y_end =  img_h -1
 
-    return ori_x,ori_y,ori_x_end-ori_x,ori_y_end-ori_y
+    return ori_x,ori_y,ori_x_end,ori_y_end
+
+#显示出
+def show_keypoinit_bbox():
+    lines=load_metadata('label.txt')    
+
+    for line in lines:
+        mdata=line.strip().split()
+        img=cv2.imread(mdata[0],1)
+        rect = list(map(int,list(map(float,mdata[1:5]))))
+        cv2.rectangle(img, (rect[0],rect[1]), (rect[2],rect[3]), (0,255,0), 2)
+        x1,y1,x2,y2=image_expend_roi(img.shape[1],img.shape[0],rect[0],rect[1], rect[2],rect[3],0.25)
+        cv2.rectangle(img, (x1,y1),(x2,y2), (0,255,255), 2)
+        for i in range(21):
+            x =int(float(mdata[5+2*i]))
+            y =int(float(mdata[5+2*i+1]))
+            cv2.circle(img, (x,y), 2, (0,0,255), -1,4)
+        cv2.imshow('img',img)
+        cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def load_all_labeldata(lines):
+    all_data={}
+    for line in lines:
+        mdata=line.strip().split()
+        name = mdata[0]
+        if name not in all_data:
+            all_data[name] =[]
+        rect = list(map(int,list(map(float,mdata[1:5]))))
+        x = list(map(float,mdata[5::2]))
+        y = list(map(float,mdata[6::2]))
+        marks= list(zip(x,y))
+        all_data[name].append((rect,marks))
+    return all_data
 
 def generate_train_test_file():
     lines=load_metadata('label.txt')
     fo = open("train.txt", "w")
-    str =''
-    roi_list=[]
-    marks_list=[]
-    for line in lines:
-        
-        mdata=line.split()
-        str =  mdata[0]
-        for i in range(4):
-            roi_list.append(int(float(mdata[i+1])))
-        for i in range(42):
-            marks_list.append(int(float(mdata[i+5])))
-        
-        img=cv2.imread(mdata[0],1)
-        image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_w,bbox_h,scale)
-
-        fo.write( str )
-        roi_list.clear()
-        marks_list.clear()
-    
+    ss =' '
+    all_data=load_all_labeldata(lines)
+    for name,value in all_data.items():
+        for v in value:
+            rect = v[0]
+            marks = v[1]
+            img=cv2.imread(name,1)
+            x1,y1,x2,y2=image_expend_roi(img.shape[1],img.shape[0],rect[0],rect[1],rect[2],rect[3],0.25)
+            new_roi = [x1,y1,x2,y2]
+            new_marks = np.array(marks) - np.array([x1,y1])
+            fo.write(name + ' '+ss.join(map(str,new_roi))+' '+ss.join(map(str,new_marks.flatten()))+'\n')
+    fo.close()
 
 if __name__ == '__main__':
-    show_keypoinit_bbox()
+    #show_keypoinit_bbox()
+    generate_train_test_file()
