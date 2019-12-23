@@ -27,3 +27,11 @@ cv2.destroyAllWindows()
 
 #3 Combine image crop, color shift, rotation and perspective transform together to complete a data augmentation script
 
+def data_augmentation(img, count):
+    #random color shift
+    #random rotation
+    #random crop
+
+    for i in range(count):
+
+

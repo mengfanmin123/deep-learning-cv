@@ -61,11 +61,14 @@ def remove_invalid_image(lines):
     return images
 
 
-def load_metadata():
+def load_metadata(metadata):
     tmp_lines = []
+    current_dir = os.path.dirname(os.path.abspath(__file__))
     for folder_name in folder_list:
-        folder = os.path.join('data', folder_name)
-        metadata_file = os.path.join(folder, 'metadata')
+        
+        folder = os.path.join(current_dir+'/data', folder_name)
+        metadata_file = os.path.join(folder, metadata)
+        metadata_file = metadata_file.replace('\\', '/')
         with open(metadata_file) as f:
             lines = f.readlines()
         tmp_lines.extend(list(map((folder + '/').__add__, lines)))
@@ -248,3 +251,21 @@ def generate_random_crops(shape, rects, random_times):
 
 3、显示坐标框
 '''
+
+def show_keypoinit_bbox():
+    lines=load_metadata('label.txt')    
+
+    for line in lines:
+        mdata=line.split()
+        img=cv2.imread(mdata[0],1)
+        cv2.rectangle(img, (int(float(mdata[1])),int(float(mdata[2]))), (int(float(mdata[3])),int(float(mdata[4]))), (0,255,0), 2)
+        for i in range(21):
+            x =int(float(mdata[5+2*i]))
+            y =int(float(mdata[5+2*i+1]))
+            cv2.circle(img, (x,y), 2, (0,0,255), -1,4)
+        cv2.imshow('img',img)
+        cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
+if __name__ == '__main__':
+    show_keypoinit_bbox()
