@@ -251,7 +251,7 @@ def generate_random_crops(shape, rects, random_times):
 
 3、显示坐标框
 '''
-
+#显示出
 def show_keypoinit_bbox():
     lines=load_metadata('label.txt')    
 
@@ -266,6 +266,50 @@ def show_keypoinit_bbox():
         cv2.imshow('img',img)
         cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+def image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_w,bbox_h,scale):
     
+    ori_x = bbox_x1 - int(scale*bbox_w)
+    ori_y = bbox_y1 - int(scale*bbox_h)
+
+    if ori_x < 0:
+        ori_x = 0
+    if ori_y < 0:
+        ori_y = 0
+
+    ori_x_end = bbox_x1 +bbox_w + int(scale*bbox_w)
+    ori_y_end = bbox_y1 +bbox_h+ int(scale*bbox_h)
+
+    if ori_x_end >=img_w:
+        ori_x_end = img_w-1
+    
+    if ori_y_end >=img_h:
+        ori_y_end =  img_h -1
+
+    return ori_x,ori_y,ori_x_end-ori_x,ori_y_end-ori_y
+
+def generate_train_test_file():
+    lines=load_metadata('label.txt')
+    fo = open("train.txt", "w")
+    str =''
+    roi_list=[]
+    marks_list=[]
+    for line in lines:
+        
+        mdata=line.split()
+        str =  mdata[0]
+        for i in range(4):
+            roi_list.append(int(float(mdata[i+1])))
+        for i in range(42):
+            marks_list.append(int(float(mdata[i+5])))
+        
+        img=cv2.imread(mdata[0],1)
+        image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_w,bbox_h,scale)
+
+        fo.write( str )
+        roi_list.clear()
+        marks_list.clear()
+    
+
 if __name__ == '__main__':
     show_keypoinit_bbox()
