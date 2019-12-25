@@ -69,6 +69,7 @@ def load_metadata(metadata):
         folder = os.path.join(current_dir+'/data', folder_name)
         metadata_file = os.path.join(folder, metadata)
         metadata_file = metadata_file.replace('\\', '/')
+        
         with open(metadata_file) as f:
             lines = f.readlines()
         tmp_lines.extend(list(map((folder + '/').__add__, lines)))
@@ -277,8 +278,7 @@ def image_expend_roi(img_w,img_h,bbox_x1,bbox_y1,bbox_x2,bbox_y2,scale):
 
 #显示出
 def show_keypoinit_bbox():
-    lines=load_metadata('label.txt')    
-
+    lines=load_metadata('label.txt')   
     for line in lines:
         mdata=line.strip().split()
         img=cv2.imread(mdata[0],1)
@@ -309,12 +309,11 @@ def load_all_labeldata(lines):
         all_data[name].append((rect,marks))
     return all_data
 
-def generate_train_test_file():
-    lines=load_metadata('label.txt')
-    fo = open("train.txt", "w")
+
+def save_to_file(lines,fo):
     ss =' '
-    all_data=load_all_labeldata(lines)
-    for name,value in all_data.items():
+    _data=load_all_labeldata(lines)
+    for name,value in _data.items():
         for v in value:
             rect = v[0]
             marks = v[1]
@@ -323,7 +322,18 @@ def generate_train_test_file():
             new_roi = [x1,y1,x2,y2]
             new_marks = np.array(marks) - np.array([x1,y1])
             fo.write(name + ' '+ss.join(map(str,new_roi))+' '+ss.join(map(str,new_marks.flatten()))+'\n')
-    fo.close()
+
+
+def generate_train_test_file():
+    lines=load_metadata('label.txt')
+    random.shuffle(lines)
+    fo_train = open("train.txt", "w")
+    fo_test = open("test.txt", "w")
+    len_train = int(len(lines)*0.9)
+    save_to_file(lines[:len_train],fo_train)
+    save_to_file(lines[len_train:],fo_test)
+    fo_train.close()
+    fo_test.close()
 
 if __name__ == '__main__':
     #show_keypoinit_bbox()
