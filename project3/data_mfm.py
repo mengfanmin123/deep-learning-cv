@@ -62,7 +62,7 @@ class ToTensor(object):
 
 class FaceLandmarksDataset(Dataset):
     # Face Landmarks Dataset
-    def __init__(self, src_lines, transform=None):
+    def __init__(self, src_lines,train, transform=None):
         '''
         :param src_lines: src_lines
         :param train: whether we are training or not
@@ -78,16 +78,18 @@ class FaceLandmarksDataset(Dataset):
         img_name, rect, landmarks = parse_line(self.lines[idx])
         # image
         img = Image.open(img_name).convert('L')     
-        img_crop = img.crop(tuple(rect))            
+        img_crop = img.crop(tuple(rect))        
         landmarks = np.array(landmarks).astype(np.float32)
-		
+
 		# you should let your landmarks fit to the train_boarder(112)
 		# please complete your code under this blank
 		# your code:
-		
-		
-		
-		
+        x_scale = train_boarder/img_crop.size[0]
+        y_scale = train_boarder/img_crop.size[1]
+
+        landmarks[0::2] = landmarks[0::2]*x_scale
+        landmarks[1::2] = landmarks[1::2]*y_scale
+
         sample = {'image': img_crop, 'landmarks': landmarks}
         sample = self.transform(sample)
         return sample
@@ -116,21 +118,25 @@ def get_train_test_set():
     valid_set = load_data('test')
     return train_set, valid_set
 
-
 if __name__ == '__main__':
     train_set = load_data('train')
     for i in range(1, len(train_set)):
         sample = train_set[i]
-        img = sample['image']
-        landmarks = sample['landmarks']
+        img = sample['image']  #torch.Size([1, 112, 112])
+        landmarks = sample['landmarks'] #) torch.Size([42])
 		## 请画出人脸crop以及对应的landmarks
 		# please complete your code under this blank
-		
-		
-		
-		
-		
-
+        img_numpy = img.numpy()
+        img_numpy = np.transpose(img_numpy, (1, 2, 0))
+        img_numpy = img_numpy.copy()
+        
+        landmarks = landmarks.numpy().astype(np.int16)
+        for i in range(21):
+            x =landmarks[2*i]
+            y =landmarks[2*i+1]
+            cv2.circle(img_numpy, (x,y), 2, (0,0,255), -1,4)
+        
+        cv2.imshow('img',img_numpy)
         key = cv2.waitKey()
         if key == 27:
             exit(0)
