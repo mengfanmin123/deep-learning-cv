@@ -2,7 +2,9 @@
 from FaceLandmarks_Network import *
 import torch
 import torch.nn as nn
-
+import torch.optim as optim
+import argparse
+from torch.utils.data.sampler import SubsetRandomSampler
 def do_main():
     parser = argparse.ArgumentParser(description='Detector')
     parser.add_argument('--batch-size', type=int, default=64, metavar='N',				
@@ -28,41 +30,35 @@ def do_main():
     parser.add_argument('--phase', type=str, default='Train',   # Train/train, Predict/predict, Finetune/finetune
                         help='training, predicting or finetuning')
     args = parser.parse_args()
-	###################################################################################
-    torch.manual_seed(args.seed)
-    # For single GPU
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")    # cuda:0
-    # For multi GPUs, nothing need to change here
-    kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
-	
-    print('===> Loading Datasets')
-    train_set, test_set = get_train_test_set()
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    valid_loader = torch.utils.data.DataLoader(test_set, batch_size=args.test_batch_size)
 
-    print('===> Building Model')
-    # For single GPU
+    torch.manual_seed(args.seed)
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    device = torch.device("cuda:0" if use_cuda else "cpu")
+
+    print('loading data set......')
+    train_set,test_set = get_train_test_set()
+    train_loader = torch.utils.data.DataLoader(train_set,batch_size=args.batch_size,shuffle=True)
+    valid_loader = torch.utils.data.DataLoader(test_set,batch_size=args.test_batch_size)
+
+    print('building model......')
     model = Net().to(device)
-    ####################################################################
-    criterion_pts = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
-	####################################################################
-    if args.phase == 'Train' or args.phase == 'train':
-        print('===> Start Training')
-        train_losses, valid_losses = \
-			train(args, train_loader, valid_loader, model, criterion_pts, optimizer, device)
-        print('====================================================')
-	elif args.phase == 'Test' or args.phase == 'test'
-		print('===> Test')
-		# how to do test?
+    criterion = nn.MSELoss()
+    optimizer = optim.SGD(model.parameters,lr = args.lr,momentum=args.momentum)
+
+    if args.phase == 'train' or args.phase=='Train':
+        print('start train......')
+        train_loss,valid_loss=train(args,train_loader,valid_loader,model,criterion,optimizer,device)
+    else if args.phase = 'test' or args.phase=='Test':
+        print('start test .......')
+
     elif args.phase == 'Finetune' or args.phase == 'finetune':
         print('===> Finetune')
+
         # how to do finetune?
     elif args.phase == 'Predict' or args.phase == 'predict':
         print('===> Predict')
         # how to do predict?
-
+        
 
 if __name__ == "__main__":
     do_main()
